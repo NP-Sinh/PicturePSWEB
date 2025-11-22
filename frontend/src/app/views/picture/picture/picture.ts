@@ -19,16 +19,16 @@ export class Picture {
   formData: any = {};
 
   formFields: FormField[] = [
-    { key: 'name', label: 'Tên hình ảnh', type: 'text', required: true, colspan: 3},
+    { key: 'name', label: 'Tên hình ảnh', type: 'text', required: true, colspan: 3 },
     {
       key: 'category',
       label: 'Danh mục',
       type: 'text',
       required: true,
-      colspan: 3
+      colspan: 3,
     },
     { key: 'mainImage', label: 'Ảnh đại diện', type: 'file', required: true, colspan: 3 },
-    { key: 'subImages', label: 'Ảnh chi tiết', type: 'file', multiple: true, colspan: 3 }
+    { key: 'subImages', label: 'Ảnh chi tiết', type: 'file', multiple: true, colspan: 3 },
   ];
 
   constructor(private pictureService: PictureService) {}
@@ -39,8 +39,8 @@ export class Picture {
 
   loadPictures() {
     this.pictureService.getPictures().subscribe({
-      next: (res) => this.pictures = res,
-      error: (err) => console.error(err)
+      next: (res) => (this.pictures = res),
+      error: (err) => console.error(err),
     });
   }
 
@@ -73,7 +73,7 @@ export class Picture {
         error: (err) => {
           this.isSaving = false;
           alert('Lỗi: ' + err.error.message);
-        }
+        },
       });
     } else {
       // Create
@@ -87,7 +87,7 @@ export class Picture {
         error: (err) => {
           this.isSaving = false;
           alert('Lỗi: ' + err.error.message);
-        }
+        },
       });
     }
   }
@@ -105,5 +105,28 @@ export class Picture {
     if (!path) return '';
     if (path.startsWith('http')) return path;
     return `http://localhost:8000${path}`;
+  }
+  // Method để đếm số danh mục unique
+  getUniqueCategories(): number {
+    const categories = this.pictures.map((item) => item.category);
+    return new Set(categories).size;
+  }
+
+  // Method để lấy ngày hiện tại
+  getCurrentDate(): string {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  // Hoặc nếu bạn muốn format theo kiểu khác:
+  getCurrentDateFormatted(): string {
+    return new Date().toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
   }
 }
