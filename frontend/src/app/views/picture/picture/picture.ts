@@ -44,7 +44,6 @@ export class Picture {
     });
   }
 
-  // Mở modal thêm mới
   openCreateModal() {
     this.modalTitle = 'Thêm hình ảnh mới';
     this.currentId = null;
@@ -52,7 +51,6 @@ export class Picture {
     this.isModalOpen = true;
   }
 
-  // Mở modal sửa
   openEditModal(item: any) {
     this.modalTitle = 'Cập nhật hình ảnh';
     this.currentId = item._id;
@@ -60,7 +58,6 @@ export class Picture {
     this.isModalOpen = true;
   }
 
-  // Xử lý Submit từ Modal
   handleSave(data: any) {
     this.isSaving = true;
 
@@ -104,7 +101,6 @@ export class Picture {
     }
   }
 
-  // Helper hiển thị ảnh từ server
   getImageUrl(path: string): string {
     if (!path) return '';
     if (path.startsWith('http')) return path;

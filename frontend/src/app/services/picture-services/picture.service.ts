@@ -1,12 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PictureService {
-  private apiUrl = 'http://localhost:8000/api/pictures'; 
+  private apiUrl = `${environment.apiUrl}`;
 
   constructor(private http: HttpClient) {}
 
@@ -18,7 +19,7 @@ export class PictureService {
     return this.http.get(`${this.apiUrl}/${id}`);
   }
 
-  // Hàm helper để tạo FormData
+  // Hàm createFormData
   private createFormData(data: any): FormData {
     const formData = new FormData();
     formData.append('name', data.name);
@@ -36,7 +37,6 @@ export class PictureService {
         }
       });
     }
-
     return formData;
   }
 
