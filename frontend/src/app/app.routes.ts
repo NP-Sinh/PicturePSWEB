@@ -20,7 +20,7 @@ export const routes: Routes = [
         ,
       },
       {
-        path: 'picture',
+        path: 'admin/picture',
         component: Picture,
       },
     ],

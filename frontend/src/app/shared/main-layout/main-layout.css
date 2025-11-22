@@ -1,2 +1,4 @@
-
-
+.main-layout {
+      min-height: calc(100vh - 500px);
+      background: #0a0a0f;
+    }
