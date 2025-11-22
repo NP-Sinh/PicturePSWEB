@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -24,7 +24,7 @@ export interface FormField {
   templateUrl: './form-modal.html',
   styleUrl: './form-modal.css',
 })
-export class FormModal {
+export class FormModal implements OnChanges {
   @Input() isOpen = false;
   @Input() title = 'Form';
   @Input() fields: FormField[] = [];
@@ -39,6 +39,64 @@ export class FormModal {
   @Output() submitForm = new EventEmitter<any>();
 
   filePreviews: { [key: string]: any } = {};
+  private lastDateValue: { [key: string]: string } = {};
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['isOpen']?.currentValue === true) {
+      this.initPreviews();
+    }
+
+    if (changes['formData'] && this.isOpen) {
+      this.initPreviews();
+    }
+  }
+
+  // Tạo preview từ dữ liệu ảnh có sẵn (URL)
+  initPreviews() {
+    this.filePreviews = {};
+
+    if (!this.formData) return;
+
+    this.fields.forEach(field => {
+      if (field.type === 'file') {
+        const value = this.formData[field.key];
+
+        // Nhiều ảnh (SubImages) - Value là mảng string
+        if (field.multiple && Array.isArray(value)) {
+          this.filePreviews[field.key] = value.map(url => {
+            if (typeof url === 'string') {
+              return {
+                type: 'image',
+                url: this.formatUrl(url),
+                name: 'Ảnh đã lưu',
+                isExisting: true
+              };
+            }
+            return null;
+          }).filter(x => x !== null);
+        }
+
+        // 1 Ảnh (MainImage) - Value là string
+        else if (!field.multiple && typeof value === 'string' && value.trim() !== '') {
+          this.filePreviews[field.key] = {
+            type: 'image',
+            url: this.formatUrl(value),
+            name: 'Ảnh hiện tại',
+            isExisting: true
+          };
+        }
+      }
+    });
+  }
+
+  //  Helper nối domain vào ảnh
+  formatUrl(url: string): string {
+    if (!url) return '';
+
+    if (url.startsWith('data:') || url.startsWith('http')) return url;
+
+    return `http://localhost:8000${url.startsWith('/') ? '' : '/'}${url}`;
+  }
 
   onClose() {
     if (!this.isSaving) {
@@ -46,14 +104,17 @@ export class FormModal {
       this.filePreviews = {};
     }
   }
+
   onBackdropClick() {
     this.onClose();
   }
+
   onSubmit(form: any) {
     if (form.valid && !this.isSaving) {
       this.submitForm.emit({ ...this.formData });
     }
   }
+
   getColClass(field: FormField): string {
     if (field.colspan) {
       return `col-md-${field.colspan}`;
@@ -64,61 +125,61 @@ export class FormModal {
 
   getModalSizeClass(): string {
     switch (this.modalSize) {
-      case 'sm':
-        return 'modal-sm';
-      case 'lg':
-        return 'modal-lg';
-      case 'xl':
-        return 'modal-xl';
-      case 'fullscreen':
-        return 'modal-fullscreen';
-      default:
-        return '';
+      case 'sm': return 'modal-sm';
+      case 'lg': return 'modal-lg';
+      case 'xl': return 'modal-xl';
+      case 'fullscreen': return 'modal-fullscreen';
+      default: return '';
     }
   }
+
   // Xử lý file upload
   onFileChange(event: any, field: FormField) {
-  const files = event.target.files;
-  if (files && files.length > 0) {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      // Nếu nhiều ảnh
+      if (field.multiple) {
+        if (!Array.isArray(this.formData[field.key])) {
+           this.formData[field.key] = [];
+        }
+        this.formData[field.key] = Array.from(files);
 
-    // Nếu cho phép nhiều file
-    if (field.multiple) {
-      this.formData[field.key] = Array.from(files);
-      this.filePreviews[field.key] = [];
+        this.filePreviews[field.key] = [];
 
-      Array.from(files).forEach((file: any) => {
+        Array.from(files).forEach((file: any) => {
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e: any) => {
+              this.filePreviews[field.key].push({
+                type: 'image',
+                url: e.target.result,
+                name: file.name
+              });
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      }
+      // Nếu chỉ 1 file
+      else {
+        const file = files[0];
+        this.formData[field.key] = file;
+
         if (file.type.startsWith('image/')) {
           const reader = new FileReader();
           reader.onload = (e: any) => {
-            this.filePreviews[field.key].push({
+            this.filePreviews[field.key] = {
               type: 'image',
               url: e.target.result,
-              name: file.name
-            });
+              name: file.name,
+            };
           };
           reader.readAsDataURL(file);
         }
-      });
-    }
-    // Nếu chỉ 1 file
-    else {
-      const file = files[0];
-      this.formData[field.key] = file;
-
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e: any) => {
-          this.filePreviews[field.key] = {
-            type: 'image',
-            url: e.target.result,
-            name: file.name,
-          };
-        };
-        reader.readAsDataURL(file);
       }
     }
   }
-}
+
   removeFile(fieldKey: string, index?: number) {
     if (Array.isArray(this.formData[fieldKey]) && typeof index === 'number') {
       this.formData[fieldKey].splice(index, 1);
@@ -133,6 +194,7 @@ export class FormModal {
       if (input) input.value = '';
     }
   }
+
   // Format file size
   formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
@@ -141,6 +203,7 @@ export class FormModal {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   }
+
   // Kiểm tra có preview không
   hasPreview(fieldKey: string): boolean {
     return !!this.filePreviews[fieldKey];
@@ -152,7 +215,6 @@ export class FormModal {
   }
 
   // DATE INPUT (dd/MM/yyyy)
-  private lastDateValue: { [key: string]: string } = {};
   onDateInput(event: any, fieldKey: string) {
     const currentValue = event.target.value;
     const lastValue = this.lastDateValue[fieldKey] || '';
